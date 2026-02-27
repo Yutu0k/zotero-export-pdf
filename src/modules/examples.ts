@@ -1,5 +1,133 @@
 import { getLocaleID, getString } from "../utils/locale";
 
+/**
+ * 将 HTML 内容转换为 Markdown 格式
+ * @param html HTML 内容
+ * @returns Markdown 格式的文本
+ */
+function htmlToMarkdown(html: string): string {
+  let markdown = html;
+
+  // 移除 HTML 注释
+  markdown = markdown.replace(/<!--[\s\S]*?-->/g, '');
+
+  // 转换标题 (h1-h6)
+  markdown = markdown.replace(/<h1[^>]*>(.*?)<\/h1>/gi, '\n# $1\n');
+  markdown = markdown.replace(/<h2[^>]*>(.*?)<\/h2>/gi, '\n## $1\n');
+  markdown = markdown.replace(/<h3[^>]*>(.*?)<\/h3>/gi, '\n### $1\n');
+  markdown = markdown.replace(/<h4[^>]*>(.*?)<\/h4>/gi, '\n#### $1\n');
+  markdown = markdown.replace(/<h5[^>]*>(.*?)<\/h5>/gi, '\n##### $1\n');
+  markdown = markdown.replace(/<h6[^>]*>(.*?)<\/h6>/gi, '\n###### $1\n');
+
+  // 转换粗体
+  markdown = markdown.replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**');
+  markdown = markdown.replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**');
+
+  // 转换斜体
+  markdown = markdown.replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*');
+  markdown = markdown.replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*');
+
+  // 转换删除线
+  markdown = markdown.replace(/<del[^>]*>(.*?)<\/del>/gi, '~~$1~~');
+  markdown = markdown.replace(/<s[^>]*>(.*?)<\/s>/gi, '~~$1~~');
+
+  // 转换下划线
+  markdown = markdown.replace(/<u[^>]*>(.*?)<\/u>/gi, '<u>$1</u>');
+
+  // 转换链接
+  markdown = markdown.replace(/<a[^>]*href=["']([^"']*)["'][^>]*>(.*?)<\/a>/gi, '[$2]($1)');
+
+  // 转换图片
+  markdown = markdown.replace(/<img[^>]*src=["']([^"']*)["'][^>]*alt=["']([^"']*)["'][^>]*>/gi, '![$2]($1)');
+  markdown = markdown.replace(/<img[^>]*src=["']([^"']*)["'][^>]*>/gi, '![]($1)');
+
+  // 转换代码块
+  markdown = markdown.replace(/<pre[^>]*><code[^>]*>([\s\S]*?)<\/code><\/pre>/gi, '\n```\n$1\n```\n');
+  markdown = markdown.replace(/<pre[^>]*>([\s\S]*?)<\/pre>/gi, '\n```\n$1\n```\n');
+
+  // 转换行内代码
+  markdown = markdown.replace(/<code[^>]*>(.*?)<\/code>/gi, '`$1`');
+
+  // 转换引用
+  markdown = markdown.replace(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/gi, (match, content) => {
+    return '\n> ' + content.trim().replace(/\n/g, '\n> ') + '\n';
+  });
+
+  // 转换无序列表
+  markdown = markdown.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/gi, (match, content) => {
+    let items = content.match(/<li[^>]*>([\s\S]*?)<\/li>/gi);
+    if (items) {
+      return '\n' + items.map((item: string) => {
+        const text = item.replace(/<li[^>]*>([\s\S]*?)<\/li>/i, '$1').trim();
+        return '- ' + text;
+      }).join('\n') + '\n';
+    }
+    return match;
+  });
+
+  // 转换有序列表
+  markdown = markdown.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, (match, content) => {
+    let items = content.match(/<li[^>]*>([\s\S]*?)<\/li>/gi);
+    if (items) {
+      return '\n' + items.map((item: string, index: number) => {
+        const text = item.replace(/<li[^>]*>([\s\S]*?)<\/li>/i, '$1').trim();
+        return `${index + 1}. ${text}`;
+      }).join('\n') + '\n';
+    }
+    return match;
+  });
+
+  // 转换换行
+  markdown = markdown.replace(/<br\s*\/?>/gi, '\n');
+
+  // 转换段落
+  markdown = markdown.replace(/<p[^>]*>(.*?)<\/p>/gi, '\n$1\n');
+
+  // 转换水平线
+  markdown = markdown.replace(/<hr\s*\/?>/gi, '\n---\n');
+
+  // 转换表格
+  markdown = markdown.replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, (match, content) => {
+    // 简单的表格转换
+    let result = '\n';
+    const rows = content.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi);
+    if (rows && rows.length > 0) {
+      rows.forEach((row: string, rowIndex: number) => {
+        const cells = row.match(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi);
+        if (cells) {
+          const cellTexts = cells.map((cell: string) => {
+            return cell.replace(/<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/i, '$1').trim();
+          });
+          result += '| ' + cellTexts.join(' | ') + ' |\n';
+          if (rowIndex === 0) {
+            result += '| ' + cellTexts.map(() => '---').join(' | ') + ' |\n';
+          }
+        }
+      });
+    }
+    return result + '\n';
+  });
+
+  // 移除剩余的 HTML 标签
+  markdown = markdown.replace(/<[^>]+>/g, '');
+
+  // 解码 HTML 实体
+  markdown = markdown.replace(/&nbsp;/g, ' ');
+  markdown = markdown.replace(/&lt;/g, '<');
+  markdown = markdown.replace(/&gt;/g, '>');
+  markdown = markdown.replace(/&amp;/g, '&');
+  markdown = markdown.replace(/&quot;/g, '"');
+  markdown = markdown.replace(/&#39;/g, "'");
+
+  // 清理多余的空行
+  markdown = markdown.replace(/\n{3,}/g, '\n\n');
+
+  // 清理首尾空白
+  markdown = markdown.trim();
+
+  return markdown;
+}
+
 function example(
   target: any,
   propertyKey: string | symbol,
@@ -172,6 +300,14 @@ export class UIExampleFactory {
       icon: menuIcon,
     });
 
+    ztoolkit.Menu.register("collection", {
+      tag: "menuitem",
+      id: "zotero-collectionmenu-export-notes",
+      label: getString("export-all-note"),
+      commandListener: (ev) => this.exportAllNotesInCollection(),
+      icon: menuIcon,
+    });
+
   }
 
   @example
@@ -183,6 +319,13 @@ export class UIExampleFactory {
       tag: "menuitem",
       label: getString("export-pdf"),
       commandListener: (ev) => this.exportpdf(),
+      icon: menuIcon,
+    });
+
+    ztoolkit.Menu.register("item", {
+      tag: "menuitem",
+      label: getString("export-note"),
+      commandListener: (ev) => this.exportNotes(),
       icon: menuIcon,
     });
 
@@ -789,6 +932,312 @@ export class UIExampleFactory {
       ztoolkit.getGlobal("alert")(`选择的文件夹路径: ${folderPath}`);
     } else {
       ztoolkit.getGlobal("alert")("您尚未设置文件夹路径。请在插件首选项中设置。");
+    }
+  }
+
+  /**
+   * 导出当前选中条目的笔记到设置的文件夹
+   */
+  static async exportNotes() {
+    try {
+      // 获取当前选中的条目
+      const items = ztoolkit.getGlobal("ZoteroPane").getSelectedItems();
+
+      if (!items || items.length === 0) {
+        ztoolkit.getGlobal("alert")("未选择任何条目");
+        return;
+      }
+
+      const progressWindow = new ztoolkit.ProgressWindow(addon.data.config.addonName)
+        .createLine({
+          text: `正在处理笔记...`,
+          type: "default",
+          progress: 0
+        })
+        .show();
+
+      // 获取设置的笔记导出文件夹路径
+      const { getNoteFolderPath } = require("../utils/prefs");
+      const targetFolderPath = getNoteFolderPath();
+
+      if (!targetFolderPath) {
+        progressWindow.changeLine({
+          text: "请先在首选项中设置笔记导出文件夹路径",
+          type: "error",
+          progress: 100
+        });
+        return;
+      }
+
+      // 检查目标文件夹是否存在
+      const targetDir = (Components.classes as any)["@mozilla.org/file/local;1"]
+        .createInstance(Components.interfaces.nsIFile);
+      targetDir.initWithPath(targetFolderPath);
+
+      if (!targetDir.exists() || !targetDir.isDirectory()) {
+        progressWindow.changeLine({
+          text: `文件夹不存在: ${targetFolderPath}`,
+          type: "error",
+          progress: 100
+        });
+        return;
+      }
+
+      // 创建以当前时间命名的子文件夹
+      const now = new Date();
+      const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+      const timestampDir = targetDir.clone();
+      timestampDir.append(timestamp);
+
+      if (!timestampDir.exists()) {
+        timestampDir.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, 0o755);
+      }
+
+      progressWindow.changeLine({
+        text: `处理 ${items.length} 个条目的笔记...`,
+        type: "default",
+        progress: 20
+      });
+
+      let exportedNotes = 0;
+      let errorCount = 0;
+
+      for (const item of items) {
+        try {
+          const itemTitle = item.getField("title");
+          const safeItemTitle = itemTitle.replace(/[\\/:*?"<>|]/g, "_");
+
+          // 获取条目的所有笔记
+          const notes = item.getNotes();
+
+          if (notes && notes.length > 0) {
+            for (let i = 0; i < notes.length; i++) {
+              try {
+                const noteItem = await Zotero.Items.getAsync(notes[i]);
+                const noteContent = noteItem.getNote();
+
+                // 创建笔记文件名
+                let noteFileName = `${safeItemTitle}`;
+                if (notes.length > 1) {
+                  noteFileName += `_note${i + 1}`;
+                }
+                noteFileName += ".md";
+
+                // 创建笔记文件
+                const noteFile = timestampDir.clone();
+                noteFile.append(noteFileName);
+
+                // 转换 HTML 为 Markdown
+                const markdownContent = htmlToMarkdown(noteContent);
+
+                // 写入笔记内容
+                const foStream = (Components.classes as any)["@mozilla.org/network/file-output-stream;1"]
+                  .createInstance(Components.interfaces.nsIFileOutputStream);
+                foStream.init(noteFile, 0x02 | 0x08 | 0x20, 0o666, 0);
+
+                const converter = (Components.classes as any)["@mozilla.org/intl/converter-output-stream;1"]
+                  .createInstance(Components.interfaces.nsIConverterOutputStream);
+                converter.init(foStream, "UTF-8", 0, 0);
+
+                // 添加 Markdown 头部
+                const finalContent = `# ${itemTitle}\n\n${markdownContent}`;
+
+                converter.writeString(finalContent);
+                converter.close();
+                foStream.close();
+
+                exportedNotes++;
+              } catch (e) {
+                ztoolkit.log(`导出笔记时出错: ${e}`, "error");
+                errorCount++;
+              }
+            }
+          }
+        } catch (error) {
+          ztoolkit.log(`处理条目时出错: ${error}`, "error");
+          errorCount++;
+        }
+      }
+
+      progressWindow.changeLine({
+        text: `成功导出 ${exportedNotes} 个笔记到文件夹 ${timestamp}${errorCount > 0 ? `，${errorCount} 个错误` : ''}`,
+        type: errorCount > 0 ? "warning" : "success",
+        progress: 100
+      });
+      progressWindow.startCloseTimer(3000);
+
+    } catch (error: any) {
+      ztoolkit.log("导出笔记时出错:", error);
+      ztoolkit.getGlobal("alert")(`导出笔记时出错: ${error.message || error}`);
+    }
+  }
+
+  /**
+   * 导出当前选中目录中所有论文的笔记到设置的文件夹
+   */
+  static async exportAllNotesInCollection() {
+    try {
+      // 获取当前选中的collection
+      const collectionsView = ztoolkit.getGlobal("ZoteroPane").collectionsView;
+      if (!collectionsView) {
+        ztoolkit.getGlobal("alert")("无法获取集合视图");
+        return;
+      }
+      const selectedCollection = collectionsView.getSelectedCollection();
+
+      if (!selectedCollection) {
+        ztoolkit.getGlobal("alert")("请先选择一个目录");
+        return;
+      }
+
+      // 获取设置的笔记导出文件夹路径
+      const { getNoteFolderPath } = require("../utils/prefs");
+      const targetFolderPath = getNoteFolderPath();
+
+      if (!targetFolderPath) {
+        ztoolkit.getGlobal("alert")("未设置笔记导出文件夹，请先在首选项中设置文件夹路径");
+        return;
+      }
+
+      // 检查目标文件夹是否存在
+      const targetDir = (Components as any).classes["@mozilla.org/file/local;1"]
+        .createInstance(Components.interfaces.nsIFile);
+      targetDir.initWithPath(targetFolderPath);
+
+      if (!targetDir.exists() || !targetDir.isDirectory()) {
+        ztoolkit.getGlobal("alert")(`目标文件夹不存在: ${targetFolderPath}`);
+        return;
+      }
+
+      // 创建以当前时间命名的子文件夹
+      const now = new Date();
+      const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+      const timestampDir = targetDir.clone();
+      timestampDir.append(timestamp);
+
+      if (!timestampDir.exists()) {
+        timestampDir.create(Components.interfaces.nsIFile.DIRECTORY_TYPE, 0o755);
+      }
+
+      // 创建进度窗口
+      const progressWindow = new ztoolkit.ProgressWindow(addon.data.config.addonName)
+        .createLine({
+          text: `正在获取目录中的论文...`,
+          type: "default",
+          progress: 0
+        })
+        .show();
+
+      // 获取目录中的所有条目
+      const collectionItems = selectedCollection.getChildItems();
+      const regularItems = [];
+
+      // 过滤出常规条目（论文）
+      for (const item of collectionItems) {
+        if (item.isRegularItem()) {
+          regularItems.push(item);
+        }
+      }
+
+      if (regularItems.length === 0) {
+        progressWindow.changeLine({
+          text: "该目录中没有论文",
+          type: "error",
+          progress: 100
+        });
+        return;
+      }
+
+      progressWindow.changeLine({
+        text: `找到 ${regularItems.length} 篇论文`,
+        type: "default",
+        progress: 20
+      });
+
+      // 处理结果统计
+      let processedItems = 0;
+      let exportedNotes = 0;
+      let errorItems = 0;
+
+      // 遍历每个论文条目，导出所有笔记
+      for (const item of regularItems) {
+        try {
+          const itemTitle = item.getField("title");
+          const safeItemTitle = itemTitle.replace(/[\\/:*?"<>|]/g, "_");
+
+          // 获取条目的所有笔记
+          const notes = item.getNotes();
+
+          if (notes && notes.length > 0) {
+            for (let i = 0; i < notes.length; i++) {
+              try {
+                const noteItem = await Zotero.Items.getAsync(notes[i]);
+                const noteContent = noteItem.getNote();
+
+                // 创建笔记文件名
+                let noteFileName = `${safeItemTitle}`;
+                if (notes.length > 1) {
+                  noteFileName += `_note${i + 1}`;
+                }
+                noteFileName += ".md";
+
+                // 创建笔记文件
+                const noteFile = timestampDir.clone();
+                noteFile.append(noteFileName);
+
+                // 转换 HTML 为 Markdown
+                const markdownContent = htmlToMarkdown(noteContent);
+
+                // 写入笔记内容
+                const foStream = (Components.classes as any)["@mozilla.org/network/file-output-stream;1"]
+                  .createInstance(Components.interfaces.nsIFileOutputStream);
+                foStream.init(noteFile, 0x02 | 0x08 | 0x20, 0o666, 0);
+
+                const converter = (Components.classes as any)["@mozilla.org/intl/converter-output-stream;1"]
+                  .createInstance(Components.interfaces.nsIConverterOutputStream);
+                converter.init(foStream, "UTF-8", 0, 0);
+
+                // 添加 Markdown 头部
+                const finalContent = `# ${itemTitle}\n\n${markdownContent}`;
+
+                converter.writeString(finalContent);
+                converter.close();
+                foStream.close();
+
+                exportedNotes++;
+              } catch (e) {
+                ztoolkit.log(`导出笔记时出错: ${e}`, "error");
+                errorItems++;
+              }
+            }
+          }
+
+          processedItems++;
+
+          // 更新进度
+          const progress = Math.floor((processedItems / regularItems.length) * 80) + 20;
+          progressWindow.changeLine({
+            text: `已处理 ${processedItems}/${regularItems.length} 篇论文，导出 ${exportedNotes} 个笔记`,
+            type: "default",
+            progress: progress
+          });
+        } catch (error) {
+          errorItems++;
+          ztoolkit.log(`处理条目时出错: ${error}`, "error");
+        }
+      }
+
+      // 显示最终结果
+      progressWindow.changeLine({
+        text: `成功导出 ${exportedNotes} 个笔记到文件夹 ${timestamp}${errorItems > 0 ? `，${errorItems} 个错误` : ''}`,
+        type: errorItems > 0 ? "warning" : "success",
+        progress: 100
+      });
+      progressWindow.startCloseTimer(3000);
+
+    } catch (error: any) {
+      ztoolkit.log("处理目录笔记时出错:", error);
+      ztoolkit.getGlobal("alert")(`处理目录笔记时出错: ${error.message || error}`);
     }
   }
 

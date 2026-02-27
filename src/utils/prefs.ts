@@ -37,9 +37,17 @@ export function clearPref(key: string) {
 
 
 /**
- * 获取用户选择的文件夹路径
+ * 获取用户选择的PDF导出文件夹路径
  * @returns 文件夹路径，如果未设置则返回空字符串
  */
 export function getFolderPath(): string {
   return getPref("folderPath") || "";
+}
+
+/**
+ * 获取用户选择的笔记导出文件夹路径
+ * @returns 文件夹路径，如果未设置则返回空字符串
+ */
+export function getNoteFolderPath(): string {
+  return (getPref("noteFolderPath" as any) as string) || "";
 }

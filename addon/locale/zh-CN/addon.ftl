@@ -11,3 +11,5 @@ tabpanel-lib-tab-label = 库标签
 tabpanel-reader-tab-label = 阅读器标签
 export-all-pdf = 导出PDF
 export-pdf = 导出PDF
+export-note = 导出笔记
+export-all-note = 导出笔记

@@ -9,3 +9,7 @@ item-section-example2-sidenav-tooltip =
 item-section-example2-button-tooltip =
     .tooltiptext = 移除此面板
 item-info-row-example-label = 示例行
+export-pdf = 导出PDF
+export-all-pdf = 导出PDF
+export-note = 导出笔记
+export-all-note = 导出笔记

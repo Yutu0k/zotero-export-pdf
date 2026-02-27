@@ -9,3 +9,7 @@ item-section-example2-sidenav-tooltip =
 item-section-example2-button-tooltip =
     .tooltiptext = Unregister this section
 item-info-row-example-label = Example Row
+export-pdf = Export PDF
+export-all-pdf = Export PDF
+export-note = Export Notes
+export-all-note = Export Notes

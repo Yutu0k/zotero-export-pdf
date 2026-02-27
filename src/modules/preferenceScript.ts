@@ -166,4 +166,41 @@ function bindPrefEvents() {
         );
       }
     });
+
+  addon.data
+    .prefs!.window.document.querySelector(
+      `#zotero-prefpane-${config.addonRef}-select-note-folder`,
+    )
+    ?.addEventListener("command", async (e) => {
+      // 使用 ztoolkit 中的 FilePicker 帮助类选择笔记导出文件夹
+      try {
+        const folderPicker = new ztoolkit.FilePicker(
+          "Select Note Export Folder",
+          "folder",
+        );
+
+        // 打开文件夹选择器并获取选择的路径
+        const folderPath = await folderPicker.open();
+
+        if (folderPath) {
+          // 如果用户选择了文件夹，则更新首选项和输入框的值
+          const inputElement = addon.data.prefs!.window.document.querySelector(
+            `#zotero-prefpane-${config.addonRef}-noteFolderPath`,
+          ) as HTMLInputElement;
+
+          inputElement.value = folderPath;
+          // 保存到首选项
+          setPref("noteFolderPath" as any, folderPath);
+
+          addon.data.prefs!.window.alert(
+            `Note folder path set to: ${folderPath}`,
+          );
+        }
+      } catch (error: any) {
+        ztoolkit.log("Error selecting note folder:", error);
+        addon.data.prefs!.window.alert(
+          `Error selecting note folder: ${error.message || error}`,
+        );
+      }
+    });
 }
